@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        svg {
+            display: block;
+            margin: 25px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="padding:25px;background:#fff">
+        <label>Jitter (m): <input id="jitter" type="range" min="0" max="100" step="0.1" value="1.5"> <span id="jitter-val">1.5</span></label>
+    </div>
+</body>
+<script>
+    const width = 800, height = 800;
+    const svg = d3.select('body').append('svg').attr('width', width).attr('height', height);
+
+    // Applies a jitter to each coordinate so that lines don't overlap perfectly
+    function jitterCoord(coord, meters) {
+        const lon = coord[0], lat = coord[1];
+        const latRad = lat * Math.PI / 180;
+        const mPerDegLon = 111320 * Math.cos(latRad);
+        const mPerDegLat = 110574;
+        const dx = (Math.random() * 2 - 1) * meters / mPerDegLon;
+        const dy = (Math.random() * 2 - 1) * meters / mPerDegLat;
+        return [lon + dx, lat + dy];
+    }
+
+    function jitterGeom(geom, meters) {
+        if (geom.type === 'LineString') return { type: 'LineString', coordinates: geom.coordinates.map(c => jitterCoord(c, meters)) };
+        if (geom.type === 'MultiLineString') return { type: 'MultiLineString', coordinates: geom.coordinates.map(r => r.map(c => jitterCoord(c, meters))) };
+        return geom;
+    }
+
+    let rawData = null;
+
+    function render(meters) {
+        if (!rawData) return;
+        const features = rawData.features.map(f => ({ ...f, geometry: jitterGeom(f.geometry, meters) }));
+        const projection = d3.geoMercator().fitSize([width, height], { type: 'FeatureCollection', features });
+        const path = d3.geoPath().projection(projection);
+        svg.selectAll('path').data(features).join('path')
+            .attr('d', path)
+            .attr('fill', 'none')
+            .attr('stroke', 'red')
+            .attr('stroke-width', 1.2)
+            .attr('stroke-linecap', 'round')
+            .attr('stroke-linejoin', 'round')
+            .attr('opacity', 0.06);
+    }
+
+    d3.json('citibike_routes.geojson').then(data => {
+        rawData = data;
+        const slider = document.getElementById('jitter');
+        const val = document.getElementById('jitter-val');
+        slider.addEventListener('input', () => {
+            val.textContent = slider.value;
+            render(parseFloat(slider.value));
+        });
+        render(parseFloat(slider.value));
+    });
+</script>
+
+</html>
