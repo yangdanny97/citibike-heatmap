@@ -1,3 +1,4 @@
 citibike*.json
 data/
 __pycache__/
+.venv/
