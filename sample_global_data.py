@@ -80,7 +80,6 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--n", type=int, required=True, help="Number of rows to sample")
     p.add_argument("--out", default="citibike_sampled_data.csv", help="Output CSV path (default: citibike_sampled_data.csv)")
     return p.parse_args()
-    return p.parse_args()
 
 
 def main() -> None:

@@ -2,6 +2,7 @@ import json
 import requests
 import sys
 import os
+from typing import TypedDict, Any
 
 # Use Google Maps Routing API to calculate approximate routes between citibike stations
 # Usage: API_KEY=... python3 generate_routes.py citibike_history.json
@@ -22,11 +23,17 @@ def populate_citibike_stations():
         citibike_stations[station["name"]] = station
 
 
+class GeoJson(TypedDict):
+    type: str
+    properties: Any
+    geometry: Any
+
+
 def get_bike_route_geojson(
     origin,
     destination,
     api_key,
-):
+) -> GeoJson:
     if (origin, destination) in route_cache:
         return route_cache[(origin, destination)]
     if (destination, origin) in route_cache:
@@ -54,7 +61,7 @@ def get_bike_route_geojson(
 
     route = data["routes"][0]
     poly = route["polyline"]["geoJsonLinestring"]
-    result = {
+    result: GeoJson = {
         "type": "Feature",
         "properties": {
             "distance_m": route["distanceMeters"],
